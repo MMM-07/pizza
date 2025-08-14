@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Indian Food Explorer</title>
+  <style>
+    /* =========================
+       Fonts & Base Resets
+    ========================== */
+    @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;600;800&display=swap');
+    * { box-sizing: border-box; }
+    :root {
+      --accent: #d91e18;
+      --accent-2: #ff3b30;
+      --bg: #f7f7f8;
+      --text: #1c1c1e;
+      --muted: #555;
+      --glass-tint: rgba(255, 255, 255, 0.55);
+      --glass-border: rgba(255, 255, 255, 0.35);
+      --shadow: 0 10px 30px rgba(217, 30, 24, 0.12);
+      --scrollbar-track: #ffe7e7;
+      --scrollbar-thumb: var(--accent);
+    }
+    /* Dark theme variables toggled via [data-theme="dark"] on body */
+    body[data-theme="dark"] {
+      --bg: #0f0f12;
+      --text: #f3f3f4;
+      --muted: #c3c3c7;
+      --glass-tint: rgba(20, 20, 22, 0.55);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+      --scrollbar-track: #251a1a;
+      --scrollbar-thumb: #ff6b61;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(217, 30, 24, 0.08), transparent 60%),
+                  radial-gradient(900px 700px at 120% 30%, rgba(255, 59, 48, 0.07), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* =========================
+       Layout
+    ========================== */
+    .app {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      grid-template-rows: 100vh;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    /* Liquid glass look */
+    .glass {
+      background: var(--glass-tint);
+      backdrop-filter: saturate(160%) blur(18px);
+      -webkit-backdrop-filter: saturate(160%) blur(18px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    /* =========================
+       Sidebar
+    ========================== */
+    nav#sidebar {
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      min-width: 320px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .brand .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--accent-2), var(--accent));
+      box-shadow: 0 0 20px rgba(217, 30, 24, 0.45);
+    }
+    .brand h1 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: .02em;
+      font-size: 1.4rem;
+      color: var(--accent);
+    }
+
+    /* Dark mode switch */
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle input {
+      appearance: none;
+      width: 48px;
+      height: 26px;
+      border-radius: 999px;
+      position: relative;
+      background: linear-gradient(135deg, #ffd6d2, #ffefe9);
+      outline: none;
+      border: 1px solid var(--glass-border);
+      transition: background .25s ease, border-color .25s ease;
+    }
+    body[data-theme="dark"] .toggle input {
+      background: linear-gradient(135deg, #311919, #111113);
+    }
+    .toggle input::after {
+      content: "";
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff, #ddd);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: transform .25s ease, background .25s ease;
+    }
+    .toggle input:checked::after {
+      transform: translateX(22px);
+      background: radial-gradient(circle at 35% 35%, #ffe9e8, #ffc9c6);
+    }
+
+    /* Search */
+    #search-container {
+      margin: 10px 0 14px;
+      position: relative;
+    }
+    #search {
+      width: 100%;
+      padding: 12px 14px 12px 42px;
+      font-size: 1rem;
+      border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.55);
+      color: var(--text);
+      outline: none;
+      transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+    }
+    body[data-theme="dark"] #search {
+      background: rgba(25,25,28,0.55);
+    }
+    #search:focus {
+      border-color: rgba(217, 30, 24, 0.55);
+      box-shadow: 0 6px 18px rgba(217,30,24,0.18);
+    }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 18px; opacity: .75; user-select: none;
+    }
+
+    /* Topics list */
+    #topics-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .topic-item {
+      cursor: pointer;
+      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.45);
+      transition: transform .15s ease, background .2s ease, box-shadow .2s ease;
+    }
+    body[data-theme="dark"] .topic-item {
+      background: rgba(24,24,26,0.45);
+    }
+    .topic-item:hover,
+    .topic-item:focus,
+    .topic-item.active {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.65);
+      box-shadow: 0 10px 20px rgba(217,30,24,0.18);
+    }
+    body[data-theme="dark"] .topic-item:hover,
+    body[data-theme="dark"] .topic-item:focus,
+    body[data-theme="dark"] .topic-item.active {
+      background: rgba(30,30,34,0.65);
+    }
+    .topic-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin: 0 0 6px 0;
+      color: var(--text);
+    }
+    .topic-category {
+      font-weight: 800;
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      color: #fff;
+      user-select: none;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      display: inline-block;
+    }
+    .snack { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+    .maincourse { background: linear-gradient(135deg, #d93622, #e66c4e); }
+    .dessert { background: linear-gradient(135deg, #e05d73, #ef9ca4); }
+
+    /* =========================
+       Content Pane
+    ========================== */
+    main#content {
+      padding: 36px 48px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    main#content h2 {
+      margin: 0 0 2px 0;
+      font-size: 2.2rem;
+      line-height: 1.1;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: .01em;
+      user-select: none;
+    }
+    .content-inner {
+      padding: 24px 28px;
+      border-radius: 22px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: saturate(160%) blur(18px);
+      -webkit-backdrop-filter: saturate(160%) blur(18px);
+      box-shadow: var(--shadow);
+    }
+    body[data-theme="dark"] .content-inner {
+      background: rgba(20,20,22,0.58);
+    }
+    .category-label {
+      display: inline-block;
+      margin: 6px 0 16px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 7px 20px;
+      border-radius: 18px;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+    .lead {
+      color: var(--muted);
+      margin: 0 0 12px 0;
+    }
+    p {
+      font-size: 1.08rem;
+      line-height: 1.7;
+      margin: 12px 0;
+      max-width: 860px;
+    }
+    img.entry-img {
+      max-width: min(92%, 960px);
+      border-radius: 18px;
+      margin: 18px 0 6px;
+      box-shadow: 0 14px 28px rgba(217, 30, 24, 0.22);
+      transition: transform .25s ease;
+      user-select: none;
+      display: block;
+    }
+    img.entry-img:hover { transform: scale(1.03); }
+
+    /* Progress bar */
+    #progress-bar {
+      position: fixed; bottom: 16px; left: 380px;
+      width: calc(100% - 400px); height: 8px;
+      background: rgba(217,30,24,0.15);
+      border-radius: 999px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+    #progress-bar-inner {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      border-radius: 999px;
+      transition: width .25s ease;
+    }
+
+    /* Scrollbars */
+    #topics-list::-webkit-scrollbar, #content::-webkit-scrollbar { width: 10px; }
+    #topics-list::-webkit-scrollbar-thumb, #content::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb); border-radius: 10px;
+    }
+    #topics-list::-webkit-scrollbar-track, #content::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+    }
+
+    /* Responsiveness */
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 320px 1fr; }
+      #progress-bar { left: 340px; width: calc(100% - 360px); }
+    }
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      nav#sidebar { min-width: 0; }
+      #progress-bar { left: 20px; width: calc(100% - 40px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <nav id="sidebar" class="glass" aria-label="Indian Food Explorer Topics">
+      <div class="brand-row">
+        <div class="brand">
+          <div class="dot" aria-hidden="true"></div>
+          <h1>Indian Food Explorer</h1>
+        </div>
+        <label class="toggle" title="Dark Mode">
+          <span aria-hidden="true">🌙</span>
+          <input id="themeToggle" type="checkbox" aria-label="Toggle dark mode" />
+        </label>
+      </div>
+
+      <div id="search-container">
+        <span class="search-icon" aria-hidden="true">🔎</span>
+        <input
+          type="search"
+          id="search"
+          placeholder="Search foods (min 2 letters)"
+          aria-label="Search Indian foods"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div id="topics-list" role="list" tabindex="0" aria-live="polite" aria-relevant="additions"></div>
+    </nav>
+
+    <main id="content">
+      <div class="content-inner glass" tabindex="0" aria-live="polite" aria-atomic="true">
+        <h2>Welcome</h2>
+        <span class="category-label snack">Start Exploring</span>
+        <p class="lead">Browse accurate, well-written entries about beloved Indian dishes. Click a topic on the left or search to jump straight in.</p>
+        <p>Each article covers origin, ingredients, flavor notes, regional variations, and serving tips—edited for clarity and correct grammar. Flip the dark mode switch for a glassy night look.</p>
+      </div>
+    </main>
+  </div>
+
+  <div id="progress-bar" class="glass" aria-hidden="true">
+    <div id="progress-bar-inner"></div>
+  </div>
+
+  <script>
+    /* =========================
+       Data: 10 dishes, 7 paragraphs each, working images
+    ========================== */
+    const encyclopedia = [
+      {
+        title: "Samosa",
+        category: "Snack",
+        colorClass: "snack",
+        content: [
+          "Samosa is a beloved North Indian snack featuring a crisp, golden pastry wrapped around a spiced potato and pea filling.",
+          "Though its roots trace to Central and West Asia, the samosa was adopted and reinvented across the Indian subcontinent.",
+          "Classic fillings combine mashed potatoes with peas, onions, and green chilies, spiced with cumin, coriander, turmeric, and garam masala.",
+          "The dough is rolled, folded into cones, stuffed, and deep-fried until flaky and fragrant.",
+          "It is typically served with tangy tamarind chutney and fresh mint–coriander chutney for sweet–sour–spicy contrast.",
+          "Regional variations add lentils, minced meat, or dry fruits; shapes and sizes differ from state to state.",
+          "With tea-time charm and festival appeal, samosas are an anytime crowd-pleaser."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/3/39/Samosachutney.jpg", alt: "Crisp samosas with chutneys" }]
+      },
+      {
+        title: "Chicken Biryani",
+        category: "MainCourse",
+        colorClass: "maincourse",
+        content: [
+          "Chicken Biryani is a regal rice dish that layers aromatic basmati with marinated chicken and warm spices.",
+          "It interweaves Persian techniques with Indian flavors, evolving in royal Mughal kitchens before branching into many regional styles.",
+          "The chicken is marinated with yogurt, ginger–garlic, chilies, and garam masala; browned onions add sweetness and depth.",
+          "Parboiled basmati is layered with chicken, saffron milk, herbs, and ghee, then sealed for slow ‘dum’ cooking.",
+          "Spice notes of cardamom, cinnamon, cloves, and bay leaf perfume every grain.",
+          "Hyderabadi, Lucknowi, and Kolkata versions each tweak the method, spice balance, and garnish.",
+          "Raita and salad on the side cool and brighten this rich, celebratory centerpiece."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/9/94/Chicken_biryani_in_Hyderabadi_style.jpg", alt: "Hyderabadi-style chicken biryani" }]
+      },
+      {
+        title: "Maggi Noodles",
+        category: "Snack",
+        colorClass: "snack",
+        content: [
+          "Maggi noodles are India’s go-to instant comfort: quick-cooking strands tossed with a signature masala sachet.",
+          "The seasoning blends savory spices, onion–garlic, and herbs; many people customize with vegetables, eggs, or cheese.",
+          "College canteens and late-night hostels turned Maggi into a cultural ritual as much as a snack.",
+          "The two-minute cook time and consistent flavor made it a pantry staple across generations.",
+          "Street vendors riff with ‘tadka Maggi,’ adding tomatoes, peppers, and extra masala.",
+          "Home versions upgrade with butter, green chilies, or a fried egg for protein.",
+          "It is fast, affordable, and endlessly adaptable—comfort in a bowl."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/9/99/Maggi_Noodles_Served.JPG", alt: "A bowl of prepared Maggi noodles" }]
+      },
+      {
+        title: "Chicken Tikka Masala",
+        category: "MainCourse",
+        colorClass: "maincourse",
+        content: [
+          "Chicken Tikka Masala pairs tandoor-style grilled chicken pieces with a creamy, spiced tomato gravy.",
+          "A yogurt-and-spice marinade—garam masala, cumin, coriander, turmeric, chili—keeps the tikka juicy and smoky.",
+          "The sauce balances acidity from tomatoes with richness from cream or butter.",
+          "Silky texture meets gentle heat, making it approachable yet deeply flavored.",
+          "Naan or steamed basmati are classic partners to mop up the sauce.",
+          "The dish grew iconic worldwide, representing a bridge between Indian techniques and global tastes.",
+          "Vibrant color, charred edges, and velvety gravy: an irresistible trio."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/3/32/Chicken_tikka_masala_%282%29.jpg", alt: "Chicken tikka masala in a bowl" }]
+      },
+      {
+        title: "Pav Bhaji",
+        category: "MainCourse",
+        colorClass: "maincourse",
+        content: [
+          "Pav Bhaji is Mumbai’s iconic street food: a buttery, spiced vegetable mash served with toasted bread rolls.",
+          "Potatoes, tomatoes, peas, onions, and peppers simmer with a special pav-bhaji masala for robust flavor.",
+          "Vendors griddle the bhaji with butter until glossy, then finish with coriander and lemon.",
+          "The pav is split and toasted on the same tawa, soaking up butter and spice.",
+          "Chopped onion, a wedge of lemon, and a pat of butter are classic garnishes.",
+          "Originally a quick lunch for textile mill workers, it became a national favorite.",
+          "Hearty, tangy, and addictive—perfect for sharing around a street-side cart."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/a/a2/Pav_Bhaji_at_Street_Food_Stall.jpg", alt: "Pav Bhaji with buttered pav rolls" }]
+      },
+      {
+        title: "Bhel Puri",
+        category: "Snack",
+        colorClass: "snack",
+        content: [
+          "Bhel Puri brings together puffed rice, sev, crunchy puris, onions, tomatoes, and chutneys for a textural whirlwind.",
+          "Sweet tamarind, spicy green chutney, and a squeeze of lime create a sweet–sour–hot balance.",
+          "Fresh coriander and raw mango (in season) lend brightness and zip.",
+          "The ‘chatpata’ taste defines Mumbai’s coastal chaat culture: lively, bold, and refreshing.",
+          "Vendors adjust heat and sweetness to order—no two plates are identical.",
+          "It is light, quick, and satisfying without feeling heavy.",
+          "Best eaten immediately so the puffed rice stays crisp."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Bhel_Puri.jpg", alt: "Colorful bowl of Bhel Puri chaat" }]
+      },
+      {
+        title: "Chicken Curry",
+        category: "MainCourse",
+        colorClass: "maincourse",
+        content: [
+          "Chicken Curry is a home-kitchen staple with countless regional interpretations.",
+          "A base of onions, ginger–garlic, and tomatoes forms a savory, slightly sweet backbone.",
+          "Spice blends vary—cumin, coriander, turmeric, chili powder, garam masala—tailored to family taste.",
+          "Slow simmering melds flavors and keeps the chicken tender and juicy.",
+          "Coconut milk (in coastal styles) or yogurt (in northern styles) changes body and richness.",
+          "Rice, roti, or paratha make ideal carriers for the glossy gravy.",
+          "It is comfort food: familiar, warming, and endlessly customizable."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Chicken_curry_in_a_crock_pot.jpg", alt: "Homestyle Indian chicken curry" }]
+      },
+      {
+        title: "Kaju Katli",
+        category: "Dessert",
+        colorClass: "dessert",
+        content: [
+          "Kaju Katli is a silky cashew fudge made by cooking cashew paste with sugar to a smooth, sliceable sheet.",
+          "Thin diamonds with edible silver leaf (varak) give it a festive, elegant look.",
+          "Minimal ingredients let the buttery cashew flavor shine without excessive sweetness.",
+          "Texture is key: properly kneaded, it is tender and melts on the tongue.",
+          "A Diwali favorite and a popular gift during celebrations and weddings.",
+          "Ghee adds aroma, while cardamom (optional) lends gentle perfume.",
+          "Simple, refined, and universally loved across age groups."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/3/3c/Kaju_Katli.jpg", alt: "Diamond slices of Kaju Katli with silver leaf" }]
+      },
+      {
+        title: "Laddu",
+        category: "Dessert",
+        colorClass: "dessert",
+        content: [
+          "Laddu refers to round Indian confections shaped from flours, sugar or jaggery, and ghee.",
+          "Besan laddu roasts chickpea flour in ghee to a nutty, aromatic crumble before binding.",
+          "Motichoor laddu uses tiny fried gram-flour pearls soaked in syrup, then shaped.",
+          "Cardamom and saffron are common flavorings; nuts add crunch and richness.",
+          "They signal celebration—offered in temples, shared at weddings, and gifted at festivals.",
+          "Texture ranges from soft and fudgy to delicately granular depending on style.",
+          "A small sweet with big nostalgia and cultural weight."
+        ],
+        images: [{ src: "https://upload.wikimedia.org/wikipedia/commons/5/5b/Motichoor_laddu.jpg", alt: "Bright orange motichoor laddus" }]
+      },
+      {
+        title: "Kurkure (Snack)",
+        category: "Snack",
+        colorClass: "snack",
+        content: [
+          "Kurkure is a popular crunchy, masala-dusted extruded snack widely enjoyed across India.",
+          "It is known for a bold spice profile and an ultra-crisp bite that pairs perfectly with chai.",
+          "Flavors range from classic masala to tangy and chili-forward regional riffs.",
+          "Portion-friendly packs and shareable family bags make it a common movie-night pick.",
+          "Street-style chaat versions toss Kurkure with onions, tomatoes, chilies, and chutneys.",
+          "The craveable texture keeps it in the rotation alongside traditional namkeen.",
+          "It is a modern pantry staple that fits right in with India’s snack culture."
+        ],
+        images: [
+          /* Reliable representative namkeen image (product shots are rare on Wikimedia). */
+          { src: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Bhakarwadi_India_Snack.jpg", alt: "Crunchy namkeen spirals (representative snack)" }
+        ]
+      }
+    ];
+
+    /* =========================
+       DOM Refs
+    ========================== */
+    const topicsList = document.getElementById('topics-list');
+    const content = document.getElementById('content');
+    const searchInput = document.getElementById('search');
+    const progressBarInner = document.getElementById('progress-bar-inner');
+    const themeToggle = document.getElementById('themeToggle');
+
+    /* =========================
+       Theme: persist + toggle
+    ========================== */
+    const THEME_KEY = 'ife-theme';
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark') {
+      document.body.setAttribute('data-theme', 'dark');
+      themeToggle.checked = true;
+    }
+    themeToggle.addEventListener('change', () => {
+      const isDark = themeToggle.checked;
+      document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+    });
+
+    /* =========================
+       Rendering & Interactions
+    ========================== */
+    function cleanText(text) {
+      return text.toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function renderTopics(list = encyclopedia) {
+      topicsList.innerHTML = '';
+      list.forEach((topic, i) => {
+        const div = document.createElement('div');
+        div.className = 'topic-item';
+        div.tabIndex = 0;
+        div.setAttribute('role', 'listitem');
+        div.innerHTML = `
+          <div class="topic-title">${topic.title}</div>
+          <span class="topic-category ${topic.colorClass}">${topic.category}</span>
+        `;
+        div.addEventListener('click', () => selectTopic(i));
+        div.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault(); selectTopic(i);
+          }
+        });
+        topicsList.appendChild(div);
+      });
+    }
+
+    let currentIndex = null;
+
+    function selectTopic(index) {
+      currentIndex = index;
+      const topic = encyclopedia[index];
+      document.querySelectorAll('.topic-item').forEach(item => item.classList.remove('active'));
+      if (topicsList.children[index]) topicsList.children[index].classList.add('active');
+
+      let html = `
+        <h2>${topic.title}</h2>
+        <span class="category-label ${topic.colorClass}">${topic.category}</span>
+      `;
+      html += `<p class="lead">An overview with origin, key ingredients, and what makes it special.</p>`;
+      topic.content.forEach(p => { html += `<p>${p}</p>`; });
+      if (topic.images) {
+        topic.images.forEach(img => {
+          html += `<img class="entry-img" src="${img.src}" alt="${img.alt}" loading="lazy">`;
+        });
+      }
+
+      content.innerHTML = `<div class="content-inner glass" tabindex="0" aria-live="polite" aria-atomic="true">${html}</div>`;
+      const inner = content.querySelector('.content-inner');
+      inner.focus();
+      content.scrollTop = 0;
+      updateProgressBar();
+    }
+
+    searchInput.addEventListener('input', () => {
+      const q = cleanText(searchInput.value);
+      if (q.length < 2) { renderTopics(); return; }
+      const filtered = encyclopedia.filter(topic =>
+        cleanText(topic.title).includes(q) ||
+        cleanText(topic.category).includes(q) ||
+        topic.content.some(p => cleanText(p).includes(q))
+      );
+      renderTopics(filtered);
+    });
+
+    content.addEventListener('scroll', updateProgressBar);
+    function updateProgressBar() {
+      if (currentIndex === null) { progressBarInner.style.width = '0%'; return; }
+      const inner = content.querySelector('.content-inner');
+      if (!inner) return;
+      const scrollTop = content.scrollTop;
+      const scrollHeight = inner.scrollHeight - content.clientHeight;
+      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      progressBarInner.style.width = progress + '%';
+    }
+
+    // Initial render
+    renderTopics();
+  </script>
+</body>
+</html>
